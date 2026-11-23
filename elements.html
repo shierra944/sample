@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Element Lab</title>
+<style>
+  :root {
+    --bg: #14121f;
+    --panel: #1e1b2e;
+    --line: #2d2942;
+    --text: #e9e6f5;
+    --muted: #8b85a8;
+    --accent: #ffb84d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  .topnav {
+    display: flex; gap: 6px; padding: 10px 20px;
+    border-bottom: 2px solid var(--line); background: var(--panel);
+  }
+  .topnav a {
+    color: var(--muted); text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 600;
+  }
+  .topnav a:hover { color: var(--text); }
+  .topnav a.active { color: #1a1426; background: var(--accent); }
+  main { max-width: 1240px; margin: 0 auto; padding: 20px; }
+  header h1 { margin: 0 0 6px; color: var(--accent); font-size: 26px; letter-spacing: .04em; }
+  header p { margin: 0 0 14px; color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 820px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0; }
+  h3 { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 18px 0 8px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 12px; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  .table-scroll { overflow-x: auto; padding-bottom: 6px; }
+  .ptable {
+    display: grid;
+    grid-template-columns: repeat(18, minmax(52px, 1fr));
+    gap: 3px;
+    min-width: 990px;
+  }
+  .cell {
+    --c: #868e96;
+    position: relative;
+    aspect-ratio: 1 / 1.08;
+    padding: 3px 4px;
+    border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+    border-top: 3px solid var(--c);
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--c) 14%, var(--panel));
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    display: flex; flex-direction: column; justify-content: space-between;
+    transition: transform .08s, opacity .15s, background .15s;
+  }
+  .cell:hover { transform: scale(1.12); z-index: 2; background: color-mix(in srgb, var(--c) 32%, var(--panel)); }
+  .cell .num { font-size: 9px; color: var(--muted); }
+  .cell .sym { font-size: 17px; font-weight: 700; line-height: 1; }
+  .cell .nm { font-size: 7.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cell.dim { opacity: .25; }
+  .cell.picked { background: color-mix(in srgb, var(--c) 55%, var(--panel)); box-shadow: 0 0 0 2px var(--c); }
+  .cell .count {
+    position: absolute; top: 2px; right: 3px;
+    background: var(--accent); color: #1a1426; border-radius: 8px;
+    font-size: 9px; font-weight: 700; padding: 0 4px;
+  }
+  .placeholder {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: var(--muted); border: 1px dashed var(--line); border-radius: 4px;
+  }
+  .spacer { grid-column: 1 / -1; height: 10px; }
+
+  .lab { display: grid; grid-template-columns: 320px 1fr; gap: 16px; margin-top: 20px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .card { background: var(--panel); border: 2px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+  button.btn {
+    font: inherit; font-size: 12px; font-weight: 700;
+    background: var(--accent); color: #1a1426; border: 0; border-radius: 6px;
+    padding: 7px 12px; cursor: pointer;
+  }
+  button.btn.ghost { background: var(--line); color: var(--text); }
+  button.btn:hover { filter: brightness(1.1); }
+
+  .tray { display: flex; flex-wrap: wrap; gap: 8px; min-height: 44px; }
+  .tray .empty { color: var(--muted); font-size: 13px; line-height: 1.5; }
+  .chip {
+    --c: #868e96;
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 18%, var(--panel));
+    border-radius: 20px; padding: 4px 6px 4px 12px; font-weight: 700;
+  }
+  .chip small { color: var(--muted); font-weight: 400; }
+  .chip button {
+    font: inherit; border: 0; background: var(--line); color: var(--text);
+    width: 20px; height: 20px; border-radius: 50%; cursor: pointer; line-height: 1; padding: 0;
+  }
+
+  .el-big { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
+  .el-tile {
+    --c: #868e96;
+    width: 74px; height: 80px; border-radius: 6px; border-top: 4px solid var(--c);
+    background: color-mix(in srgb, var(--c) 22%, var(--panel));
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .el-tile b { font-size: 30px; }
+  .el-tile span { font-size: 11px; color: var(--muted); }
+  .el-name { font-size: 18px; font-weight: 700; }
+  .el-cat { font-size: 12px; margin-top: 3px; }
+
+  table.props { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.props td { padding: 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.props td:first-child { color: var(--muted); width: 44%; padding-right: 10px; }
+
+  .results { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cmp-btn {
+    font: inherit; cursor: pointer; text-align: left;
+    background: var(--bg); color: var(--text);
+    border: 2px solid var(--line); border-radius: 8px; padding: 8px 12px;
+  }
+  .cmp-btn b { font-size: 16px; display: block; }
+  .cmp-btn span { font-size: 11px; color: var(--muted); }
+  .cmp-btn:hover { border-color: var(--muted); }
+  .cmp-btn.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--bg)); }
+  .cmp-btn.small b { font-size: 13px; }
+  .note { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 10px; }
+  .note.warn { color: #ffd8a8; }
+
+  .compound { display: grid; grid-template-columns: minmax(280px, 1.1fr) 1fr; gap: 18px; }
+  .viewer-wrap { position: relative; }
+  canvas#viewer {
+    width: 100%; aspect-ratio: 5 / 4; display: block; cursor: grab;
+    background: radial-gradient(circle at 50% 40%, #2a2640, #16141f 75%);
+    border-radius: 8px; border: 2px solid var(--line); touch-action: none;
+  }
+  canvas#viewer:active { cursor: grabbing; }
+  .viewer-tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .viewer-tools label { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
+  .bond-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; color: var(--muted); margin-top: 8px; }
+  .bond-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .formula { font-size: 34px; font-weight: 700; color: var(--accent); }
+  .cmp-name { font-size: 17px; font-weight: 700; margin-top: 2px; }
+  .badge { display: inline-block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; background: #ffd8a8; color: #1a1426; border-radius: 4px; padding: 2px 6px; margin-top: 4px; }
+  .about { color: var(--muted); font-size: 13px; line-height: 1.6; }
+  ul.bonds { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+  ul.bonds li { padding: 5px 0; border-bottom: 1px solid var(--line); }
+  ul.bonds li small { color: var(--muted); }
+  .comp-row { display: grid; grid-template-columns: 30px 1fr 58px; gap: 8px; align-items: center; font-size: 12px; margin-bottom: 5px; }
+  .comp-bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .comp-bar i { display: block; height: 100%; border-radius: 4px; }
+  .hint-drag { position: absolute; left: 10px; bottom: 8px; font-size: 11px; color: var(--muted); pointer-events: none; }
+
+  @media (max-width: 900px) {
+    .lab { grid-template-columns: 1fr; }
+    .compound { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="index.html">Blockfall</a>
+  <a href="elements.html" class="active">Periodic Table</a>
+</nav>
+
+<main>
+  <header>
+    <h1>Element Lab</h1>
+    <p>Click any element to add an atom of it to the mixing tray. Click the same element again to add another atom.
+       Compounds those elements can form show up below, with their properties and a 3D model of their bonds that you can rotate.
+       Elements that can combine with your tray stay lit, and the rest fade out.</p>
+  </header>
+
+  <div class="legend" id="legend"></div>
+  <div class="table-scroll"><div class="ptable" id="ptable"></div></div>
+
+  <section class="lab">
+    <div class="col">
+      <div class="card">
+        <div class="card-head">
+          <h2>Mixing tray</h2>
+          <div style="display:flex; gap:6px">
+            <button class="btn" id="randomBtn">Surprise me</button>
+            <button class="btn ghost" id="clearBtn">Clear</button>
+          </div>
+        </div>
+        <div class="tray" id="tray"></div>
+      </div>
+      <div class="card" id="elementCard">
+        <h2>Element</h2>
+        <p class="note" style="margin-top:10px">Click an element in the table to see its details here.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><h2>Compounds formed</h2></div>
+        <div id="results"></div>
+      </div>
+      <div class="card" id="compoundCard" hidden>
+        <div class="compound">
+          <div>
+            <div class="viewer-wrap">
+              <canvas id="viewer"></canvas>
+              <div class="hint-drag">Drag to rotate · scroll to zoom</div>
+            </div>
+            <div class="viewer-tools">
+              <label><input type="checkbox" id="spinChk" checked> Auto-spin</label>
+              <label><input type="checkbox" id="labelChk" checked> Labels</label>
+              <button class="btn ghost" id="resetBtn">Reset view</button>
+            </div>
+            <div class="bond-legend">
+              <span><svg width="26" height="8"><line x1="1" y1="4" x2="25" y2="4" stroke="#bbb" stroke-width="3"/></svg>single</span>
+              <span><svg width="26" height="10"><line x1="1" y1="2" x2="25" y2="2" stroke="#bbb" stroke-width="2"/><line x1="1" y1="8" x2="25" y2="8" stroke="#bbb" stroke-width="2"/></svg>double</span>
+              <span><svg width="26" height="12"><line x1="1" y1="1" x2="25" y2="1" stroke="#bbb" stroke-width="2"/><line x1="1" y1="6" x2="25" y2="6" stroke="#bbb" stroke-width="2"/><line x1="1" y1="11" x2="25" y2="11" stroke="#bbb" stroke-width="2"/></svg>triple</span>
+              <span><svg width="26" height="10"><line x1="1" y1="2" x2="25" y2="2" stroke="#bbb" stroke-width="2"/><line x1="1" y1="8" x2="25" y2="8" stroke="#bbb" stroke-width="2" stroke-dasharray="3 3"/></svg>resonance</span>
+              <span><svg width="26" height="8"><line x1="1" y1="4" x2="25" y2="4" stroke="#a59fc4" stroke-width="2" stroke-dasharray="2 4"/></svg>ionic attraction</span>
+            </div>
+          </div>
+          <div id="props"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ---------------- Element data ---------------- */
+const RAW = `
+1 H Hydrogen 1.008 nonmetal 2.20
+2 He Helium 4.0026 noble -
+3 Li Lithium 6.94 alkali 0.98
+4 Be Beryllium 9.0122 alkaline 1.57
+5 B Boron 10.81 metalloid 2.04
+6 C Carbon 12.011 nonmetal 2.55
+7 N Nitrogen 14.007 nonmetal 3.04
+8 O Oxygen 15.999 nonmetal 3.44
+9 F Fluorine 18.998 halogen 3.98
+10 Ne Neon 20.180 noble -
+11 Na Sodium 22.990 alkali 0.93
+12 Mg Magnesium 24.305 alkaline 1.31
+13 Al Aluminium 26.982 post 1.61
+14 Si Silicon 28.085 metalloid 1.90
+15 P Phosphorus 30.974 nonmetal 2.19
+16 S Sulfur 32.06 nonmetal 2.58
+17 Cl Chlorine 35.45 halogen 3.16
+18 Ar Argon 39.948 noble -
+19 K Potassium 39.098 alkali 0.82
+20 Ca Calcium 40.078 alkaline 1.00
+21 Sc Scandium 44.956 transition 1.36
+22 Ti Titanium 47.867 transition 1.54
+23 V Vanadium 50.942 transition 1.63
+24 Cr Chromium 51.996 transition 1.66
+25 Mn Manganese 54.938 transition 1.55
+26 Fe Iron 55.845 transition 1.83
+27 Co Cobalt 58.933 transition 1.88
+28 Ni Nickel 58.693 transition 1.91
+29 Cu Copper 63.546 transition 1.90
+30 Zn Zinc 65.38 transition 1.65
+31 Ga Gallium 69.723 post 1.81
+32 Ge Germanium 72.630 metalloid 2.01
+33 As Arsenic 74.922 metalloid 2.18
+34 Se Selenium 78.971 nonmetal 2.55
+35 Br Bromine 79.904 halogen 2.96
+36 Kr Krypton 83.798 noble 3.00
+37 Rb Rubidium 85.468 alkali 0.82
+38 Sr Strontium 87.62 alkaline 0.95
+39 Y Yttrium 88.906 transition 1.22
+40 Zr Zirconium 91.224 transition 1.33
+41 Nb Niobium 92.906 transition 1.6
+42 Mo Molybdenum 95.95 transition 2.16
+43 Tc Technetium 98 transition 1.9
+44 Ru Ruthenium 101.07 transition 2.2
+45 Rh Rhodium 102.91 transition 2.28
+46 Pd Palladium 106.42 transition 2.20
+47 Ag Silver 107.87 transition 1.93
+48 Cd Cadmium 112.41 transition 1.69
+49 In Indium 114.82 post 1.78
+50 Sn Tin 118.71 post 1.96
+51 Sb Antimony 121.76 metalloid 2.05
+52 Te Tellurium 127.60 metalloid 2.1
+53 I Iodine 126.90 halogen 2.66
+54 Xe Xenon 131.29 noble 2.6
+55 Cs Caesium 132.91 alkali 0.79
+56 Ba Barium 137.33 alkaline 0.89
+57 La Lanthanum 138.91 lanthanide 1.10
+58 Ce Cerium 140.12 lanthanide 1.12
+59 Pr Praseodymium 140.91 lanthanide 1.13
+60 Nd Neodymium 144.24 lanthanide 1.14
+61 Pm Promethium 145 lanthanide -
+62 Sm Samarium 150.36 lanthanide 1.17
+63 Eu Europium 151.96 lanthanide -
+64 Gd Gadolinium 157.25 lanthanide 1.20
+65 Tb Terbium 158.93 lanthanide -
+66 Dy Dysprosium 162.50 lanthanide 1.22
+67 Ho Holmium 164.93 lanthanide 1.23
+68 Er Erbium 167.26 lanthanide 1.24
+69 Tm Thulium 168.93 lanthanide 1.25
+70 Yb Ytterbium 173.05 lanthanide -
+71 Lu Lutetium 174.97 lanthanide 1.27
+72 Hf Hafnium 178.49 transition 1.3
+73 Ta Tantalum 180.95 transition 1.5
+74 W Tungsten 183.84 transition 2.36
+75 Re Rhenium 186.21 transition 1.9
+76 Os Osmium 190.23 transition 2.2
+77 Ir Iridium 192.22 transition 2.20
+78 Pt Platinum 195.08 transition 2.28
+79 Au Gold 196.97 transition 2.54
+80 Hg Mercury 200.59 transition 2.00
+81 Tl Thallium 204.38 post 1.62
+82 Pb Lead 207.2 post 2.33
+83 Bi Bismuth 208.98 post 2.02
+84 Po Polonium 209 post 2.0
+85 At Astatine 210 halogen 2.2
+86 Rn Radon 222 noble 2.2
+87 Fr Francium 223 alkali 0.7
+88 Ra Radium 226 alkaline 0.9
+89 Ac Actinium 227 actinide 1.1
+90 Th Thorium 232.04 actinide 1.3
+91 Pa Protactinium 231.04 actinide 1.5
+92 U Uranium 238.03 actinide 1.38
+93 Np Neptunium 237 actinide 1.36
+94 Pu Plutonium 244 actinide 1.28
+95 Am Americium 243 actinide 1.3
+96 Cm Curium 247 actinide 1.3
+97 Bk Berkelium 247 actinide 1.3
+98 Cf Californium 251 actinide 1.3
+99 Es Einsteinium 252 actinide 1.3
+100 Fm Fermium 257 actinide 1.3
+101 Md Mendelevium 258 actinide 1.3
+102 No Nobelium 259 actinide 1.3
+103 Lr Lawrencium 266 actinide 1.3
+104 Rf Rutherfordium 267 transition -
+105 Db Dubnium 268 transition -
+106 Sg Seaborgium 269 transition -
+107 Bh Bohrium 270 transition -
+108 Hs Hassium 277 transition -
+109 Mt Meitnerium 278 unknown -
+110 Ds Darmstadtium 281 unknown -
+111 Rg Roentgenium 282 unknown -
+112 Cn Copernicium 285 unknown -
+113 Nh Nihonium 286 unknown -
+114 Fl Flerovium 289 unknown -
+115 Mc Moscovium 290 unknown -
+116 Lv Livermorium 293 unknown -
+117 Ts Tennessine 294 unknown -
+118 Og Oganesson 294 unknown -
+`;
+
+const CAT = {
+  alkali:     ['Alkali metal', '#ff6b6b'],
+  alkaline:   ['Alkaline earth metal', '#ff922b'],
+  transition: ['Transition metal', '#fcc419'],
+  post:       ['Post-transition metal', '#a9e34b'],
+  metalloid:  ['Metalloid', '#38d9a9'],
+  nonmetal:   ['Reactive nonmetal', '#4dabf7'],
+  halogen:    ['Halogen', '#9775fa'],
+  noble:      ['Noble gas', '#e599f7'],
+  lanthanide: ['Lanthanide', '#f783ac'],
+  actinide:   ['Actinide', '#ffc078'],
+  unknown:    ['Unknown properties', '#868e96'],
+};
+const GASES = new Set(['H','He','N','O','F','Ne','Cl','Ar','Kr','Xe','Rn']);
+const LIQUIDS = new Set(['Br','Hg']);
+
+function position(z) {
+  if (z === 1) return { row: 1, col: 1, period: 1, group: 1 };
+  if (z === 2) return { row: 1, col: 18, period: 1, group: 18 };
+  const starts = [[3,2],[11,3],[19,4],[37,5],[55,6],[87,7]];
+  let s = 3, p = 2;
+  for (const [st, per] of starts) if (z >= st) { s = st; p = per; }
+  const n = z - s;
+  let col;
+  if (p <= 3) col = n < 2 ? n + 1 : n + 11;
+  else if (p <= 5) col = n + 1;
+  else if (n < 2) col = n + 1;
+  else if (n <= 16) return { row: p + 3, col: n + 1, period: p, group: null, fblock: true };
+  else col = n - 13;
+  return { row: p, col, period: p, group: col };
+}
+
+const ELEMENTS = RAW.trim().split('\n').map(line => {
+  const [z, sym, name, mass, cat, en] = line.trim().split(/\s+/);
+  const Z = +z;
+  return {
+    z: Z, sym, name, mass: +mass, cat, en: en === '-' ? null : +en,
+    ...position(Z),
+    radioactive: Z === 43 || Z === 61 || Z >= 84,
+    state: Z >= 104 ? 'Unknown' : GASES.has(sym) ? 'Gas' : LIQUIDS.has(sym) ? 'Liquid' : 'Solid',
+  };
+});
+const BY = Object.fromEntries(ELEMENTS.map(e => [e.sym, e]));
+
+/* ---------------- Geometry helpers ---------------- */
+const add = (a, b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]];
+const sub = (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]];
+const scale = (a, s) => [a[0]*s, a[1]*s, a[2]*s];
+const len3 = a => Math.hypot(a[0], a[1], a[2]);
+const norm = a => scale(a, 1 / len3(a));
+const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const RAD = Math.PI / 180;
+
+const DIRS = {
+  linear:   [[1,0,0],[-1,0,0]],
+  trigonal: [[1,0,0],[-0.5,0.866,0],[-0.5,-0.866,0]],
+  tetra:    [[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]].map(norm),
+  square:   [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0]],
+  octa:     [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]],
+};
+function bent(angle) {
+  const h = angle / 2 * RAD;
+  return [[Math.sin(h), -Math.cos(h), 0], [-Math.sin(h), -Math.cos(h), 0]];
+}
+function pyramid(angle) {
+  const s = Math.sqrt((1 - Math.cos(angle * RAD)) / 1.5), c = Math.sqrt(1 - s * s);
+  return [0, 120, 240].map(phi => [s * Math.cos(phi * RAD), -c, s * Math.sin(phi * RAD)]);
+}
+// Atom placed off p (bonded to `from`) at ~109.5° to the from–p bond.
+function attach(p, from, len, ref = [0,0,1]) {
+  const u = norm(sub(p, from));
+  let v = cross(u, ref);
+  if (len3(v) < 1e-3) v = cross(u, [0,1,0]);
+  v = norm(v);
+  const a = 70.5 * RAD;
+  return add(p, scale(add(scale(u, Math.cos(a)), scale(v, Math.sin(a))), len));
+}
+
+const mol = (atoms, bonds) => ({ atoms: atoms.map(([el, x, y, z]) => ({ el, p: [x, y, z] })), bonds });
+function star(center, ligs) {
+  const atoms = [[center, 0, 0, 0]], bonds = [];
+  ligs.forEach(([el, d, l, order]) => { atoms.push([el, ...scale(d, l)]); bonds.push([0, atoms.length - 1, order]); });
+  return mol(atoms, bonds);
+}
+const ligs = (el, dirs, l, order = 1) => dirs.map(d => [el, d, l, order]);
+const diatomic = (a, b, l, order) => mol([[a, -l/2, 0, 0], [b, l/2, 0, 0]], [[0, 1, order]]);
+function lattice(cat, an, d) {
+  const atoms = [], bonds = [], idx = {};
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) {
+    idx[`${i}${j}${k}`] = atoms.length;
+    atoms.push([(i + j + k) % 2 ? an : cat, (i - 1) * d, (j - 1) * d, (k - 1) * d]);
+  }
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) {
+    const a = idx[`${i}${j}${k}`];
+    if (i < 2) bonds.push([a, idx[`${i+1}${j}${k}`], 0]);
+    if (j < 2) bonds.push([a, idx[`${i}${j+1}${k}`], 0]);
+    if (k < 2) bonds.push([a, idx[`${i}${j}${k+1}`], 0]);
+  }
+  return mol(atoms, bonds);
+}
+
+/* ---------------- Compound library ---------------- */
+// bond order: 1 single, 2 double, 3 triple, 1.5 resonance, 0 ionic attraction
+const COMPOUNDS = [
+  { f:'H2', name:'Hydrogen gas', state:'Gas', mp:'−259.2 °C', bp:'−252.9 °C', density:'0.0899 g/L', bond:'Nonpolar covalent', geometry:'Linear', angle:'—', polarity:'Nonpolar',
+    about:'The lightest molecule. Two hydrogen atoms share one pair of electrons. Used as a clean fuel and to make ammonia.', build:() => diatomic('H','H',0.74,1) },
+  { f:'N2', name:'Nitrogen gas', state:'Gas', mp:'−210.0 °C', bp:'−195.8 °C', density:'1.251 g/L', bond:'Nonpolar covalent (triple bond)', geometry:'Linear', angle:'—', polarity:'Nonpolar',
+    about:'About 78% of Earth\'s atmosphere. Its very strong triple bond makes it quite unreactive.', build:() => diatomic('N','N',1.10,3) },
+  { f:'O2', name:'Oxygen gas', state:'Gas', mp:'−218.8 °C', bp:'−183.0 °C', density:'1.429 g/L', bond:'Nonpolar covalent (double bond)', geometry:'Linear', angle:'—', polarity:'Nonpolar',
+    about:'About 21% of the air we breathe. Needed for respiration and combustion.', build:() => diatomic('O','O',1.21,2) },
+  { f:'O3', name:'Ozone', state:'Gas', mp:'−192.2 °C', bp:'−111.9 °C', density:'2.144 g/L', bond:'Covalent (resonance)', geometry:'Bent', angle:'116.8°', polarity:'Slightly polar',
+    about:'A pale-blue gas. The ozone layer high in the stratosphere absorbs harmful UV radiation.', build:() => star('O', ligs('O', bent(116.8), 1.28, 1.5)) },
+  { f:'F2', name:'Fluorine gas', state:'Gas', mp:'−219.7 °C', bp:'−188.1 °C', density:'1.696 g/L', bond:'Nonpolar covalent', geometry:'Linear', angle:'—', polarity:'Nonpolar',
+    about:'A pale-yellow gas and the most reactive of all the elements.', build:() => diatomic('F','F',1.42,1) },
+  { f:'Cl2', name:'Chlorine gas', state:'Gas', mp:'−101.5 °C', bp:'−34.0 °C', density:'3.2 g/L', bond:'Nonpolar covalent', geometry:'Linear', angle:'—', polarity:'Nonpolar',
+    about:'A toxic yellow-green gas used to disinfect water and to make PVC.', build:() => diatomic('Cl','Cl',1.99,1) },
+  { f:'Br2', name:'Bromine', state:'Liquid', mp:'−7.2 °C', bp:'58.8 °C', density:'3.10 g/cm³', bond:'Nonpolar covalent', geometry:'Linear', angle:'—', polarity:'Nonpolar',
+    about:'One of only two elements that are liquid at room temperature. Red-brown and gives off fumes.', build:() => diatomic('Br','Br',2.28,1) },
+  { f:'I2', name:'Iodine', state:'Solid', mp:'113.7 °C', bp:'184.3 °C', density:'4.93 g/cm³', bond:'Nonpolar covalent', geometry:'Linear', angle:'—', polarity:'Nonpolar',
+    about:'Shiny dark-violet crystals that sublime into a purple vapour. Used as an antiseptic.', build:() => diatomic('I','I',2.67,1) },
+  { f:'H2O', name:'Water', state:'Liquid', mp:'0 °C', bp:'100 °C', density:'1.00 g/cm³', bond:'Polar covalent', geometry:'Bent', angle:'104.5°', polarity:'Polar',
+    about:'Two lone pairs on oxygen bend the molecule. Its polarity and hydrogen bonding give water its high boiling point and make it an excellent solvent.', build:() => star('O', ligs('H', bent(104.5), 0.96)) },
+  { f:'H2O2', name:'Hydrogen peroxide', state:'Liquid', mp:'−0.43 °C', bp:'150.2 °C', density:'1.45 g/cm³', bond:'Polar covalent', geometry:'Non-planar ("open book")', angle:'~95° (H–O–O)', polarity:'Polar',
+    about:'Contains an O–O single bond that breaks easily, which makes it a strong oxidizer. Used as a bleach and disinfectant.',
+    build:() => mol([['O',-0.74,0,0],['O',0.74,0,0],['H',-0.94,0.93,0],['H',0.94,-0.3,0.88]], [[0,1,1],[0,2,1],[1,3,1]]) },
+  { f:'CO2', name:'Carbon dioxide', state:'Gas', mp:'Sublimes at −78.5 °C', bp:'—', density:'1.98 g/L', bond:'Polar covalent (double bonds)', geometry:'Linear', angle:'180°', polarity:'Nonpolar (bond dipoles cancel)',
+    about:'Made by respiration and combustion, and used by plants in photosynthesis. A major greenhouse gas.', build:() => star('C', ligs('O', DIRS.linear, 1.16, 2)) },
+  { f:'CO', name:'Carbon monoxide', state:'Gas', mp:'−205 °C', bp:'−191.5 °C', density:'1.25 g/L', bond:'Polar covalent (triple bond)', geometry:'Linear', angle:'—', polarity:'Slightly polar',
+    about:'A colourless, odourless and toxic gas produced by incomplete combustion. It binds to hemoglobin more strongly than oxygen does.', build:() => diatomic('C','O',1.13,3) },
+  { f:'CH4', name:'Methane', state:'Gas', mp:'−182.5 °C', bp:'−161.5 °C', density:'0.657 g/L', bond:'Covalent (nearly nonpolar)', geometry:'Tetrahedral', angle:'109.5°', polarity:'Nonpolar',
+    about:'The simplest hydrocarbon and the main component of natural gas.', build:() => star('C', ligs('H', DIRS.tetra, 1.09)) },
+  { f:'C2H6', name:'Ethane', state:'Gas', mp:'−182.8 °C', bp:'−88.5 °C', density:'1.36 g/L', bond:'Covalent', geometry:'Tetrahedral at each carbon', angle:'~109.5°', polarity:'Nonpolar',
+    about:'A two-carbon alkane in which every bond is single. Found in natural gas and used to make ethylene.',
+    build:() => {
+      const atoms = [['C',-0.765,0,0],['C',0.765,0,0]], bonds = [[0,1,1]];
+      for (let k = 0; k < 3; k++) {
+        const a = k * 120 * RAD, b = a + 60 * RAD;
+        atoms.push(['H', -1.128, 1.028*Math.cos(a), 1.028*Math.sin(a)]); bonds.push([0, atoms.length-1, 1]);
+        atoms.push(['H',  1.128, 1.028*Math.cos(b), 1.028*Math.sin(b)]); bonds.push([1, atoms.length-1, 1]);
+      }
+      return mol(atoms, bonds);
+    } },
+  { f:'C2H4', name:'Ethylene (ethene)', state:'Gas', mp:'−169.2 °C', bp:'−103.7 °C', density:'1.18 g/L', bond:'Covalent (C=C double bond)', geometry:'Trigonal planar at each carbon', angle:'~121°', polarity:'Nonpolar',
+    about:'The C=C double bond keeps the molecule flat. It is the building block of polyethylene plastic and a plant hormone that ripens fruit.',
+    build:() => mol([['C',-0.665,0,0],['C',0.665,0,0],['H',-1.23,0.92,0],['H',-1.23,-0.92,0],['H',1.23,0.92,0],['H',1.23,-0.92,0]], [[0,1,2],[0,2,1],[0,3,1],[1,4,1],[1,5,1]]) },
+  { f:'C2H2', name:'Acetylene (ethyne)', state:'Gas', mp:'Sublimes at −84 °C', bp:'—', density:'1.097 g/L', bond:'Covalent (C≡C triple bond)', geometry:'Linear', angle:'180°', polarity:'Nonpolar',
+    about:'Burns with oxygen in an extremely hot flame (over 3000 °C), which is why it is used for welding.',
+    build:() => mol([['H',-1.66,0,0],['C',-0.60,0,0],['C',0.60,0,0],['H',1.66,0,0]], [[0,1,1],[1,2,3],[2,3,1]]) },
+  { f:'C6H6', name:'Benzene', state:'Liquid', mp:'5.5 °C', bp:'80.1 °C', density:'0.876 g/cm³', bond:'Covalent (delocalized π ring)', geometry:'Planar hexagon', angle:'120°', polarity:'Nonpolar',
+    about:'The classic aromatic ring. Its electrons are shared evenly around the ring, so all six C–C bonds are the same length.',
+    build:() => {
+      const atoms = [], bonds = [];
+      for (let k = 0; k < 6; k++) atoms.push(['C', 1.39*Math.cos(k*60*RAD), 1.39*Math.sin(k*60*RAD), 0]);
+      for (let k = 0; k < 6; k++) atoms.push(['H', 2.47*Math.cos(k*60*RAD), 2.47*Math.sin(k*60*RAD), 0]);
+      for (let k = 0; k < 6; k++) { bonds.push([k, (k+1)%6, 1.5]); bonds.push([k, k+6, 1]); }
+      return mol(atoms, bonds);
+    } },
+  { f:'CH2O', name:'Formaldehyde', state:'Gas', mp:'−92 °C', bp:'−19 °C', density:'0.82 g/cm³ (liquid, −20 °C)', bond:'Polar covalent', geometry:'Trigonal planar', angle:'~116.5° (H–C–H)', polarity:'Polar',
+    about:'The simplest aldehyde. Dissolved in water it is used to preserve biological specimens and to make resins.',
+    build:() => star('C', [['O',[0,1,0],1.21,2], ...ligs('H', bent(116.5), 1.10)]) },
+  { f:'CH3OH', name:'Methanol', state:'Liquid', mp:'−97.6 °C', bp:'64.7 °C', density:'0.792 g/cm³', bond:'Polar covalent', geometry:'Tetrahedral at C, bent at O', angle:'~108.5° (C–O–H)', polarity:'Polar',
+    about:'The simplest alcohol. It is a fuel and solvent, and it is toxic to drink.',
+    build:() => {
+      const atoms = [['C',0,0,0],['O',1.43,0,0]], bonds = [[0,1,1]];
+      for (let k = 0; k < 3; k++) { const a = k*120*RAD; atoms.push(['H', -0.363, 1.028*Math.cos(a), 1.028*Math.sin(a)]); bonds.push([0, atoms.length-1, 1]); }
+      atoms.push(['H', 1.735, -0.91, 0]); bonds.push([1, atoms.length-1, 1]);
+      return mol(atoms, bonds);
+    } },
+  { f:'HCN', name:'Hydrogen cyanide', state:'Liquid (boils at 26 °C)', mp:'−13.3 °C', bp:'25.6 °C', density:'0.687 g/cm³', bond:'Polar covalent (C≡N triple bond)', geometry:'Linear', angle:'180°', polarity:'Polar',
+    about:'An extremely toxic liquid that boils just above room temperature. Used in industry to make plastics such as nylon.',
+    build:() => mol([['H',-1.07,0,0],['C',0,0,0],['N',1.16,0,0]], [[0,1,1],[1,2,3]]) },
+  { f:'NH3', name:'Ammonia', state:'Gas', mp:'−77.7 °C', bp:'−33.3 °C', density:'0.73 g/L', bond:'Polar covalent', geometry:'Trigonal pyramidal', angle:'107°', polarity:'Polar',
+    about:'The lone pair on nitrogen pushes the three hydrogens down into a pyramid. A key ingredient in fertilizers.', build:() => star('N', ligs('H', pyramid(107), 1.01)) },
+  { f:'HCl', name:'Hydrogen chloride', state:'Gas', mp:'−114.2 °C', bp:'−85.1 °C', density:'1.49 g/L', bond:'Polar covalent', geometry:'Linear', angle:'—', polarity:'Polar',
+    about:'Dissolved in water it forms hydrochloric acid, which is also the acid in your stomach.', build:() => diatomic('H','Cl',1.27,1) },
+  { f:'HF', name:'Hydrogen fluoride', state:'Gas (liquid below 19.5 °C)', mp:'−83.6 °C', bp:'19.5 °C', density:'0.99 g/cm³ (liquid)', bond:'Polar covalent (very polar)', geometry:'Linear', angle:'—', polarity:'Polar',
+    about:'Its H–F bond is one of the most polar covalent bonds there is. In water it forms hydrofluoric acid, which can etch glass.', build:() => diatomic('H','F',0.92,1) },
+  { f:'H2S', name:'Hydrogen sulfide', state:'Gas', mp:'−85.5 °C', bp:'−60.3 °C', density:'1.36 g/L', bond:'Polar covalent (weakly)', geometry:'Bent', angle:'92.1°', polarity:'Polar',
+    about:'A toxic gas that smells of rotten eggs. Its shape is like water\'s, but with a much smaller bond angle.', build:() => star('S', ligs('H', bent(92.1), 1.34)) },
+  { f:'NaCl', name:'Sodium chloride (table salt)', state:'Solid', mp:'801 °C', bp:'1465 °C', density:'2.17 g/cm³', bond:'Ionic', geometry:'Cubic crystal lattice (rock salt)', angle:'90° between neighbours', polarity:'Ionic',
+    about:'Sodium gives one electron to chlorine, forming Na⁺ and Cl⁻ ions. Each ion is surrounded by 6 ions of the opposite charge.', build:() => lattice('Na','Cl',2.82) },
+  { f:'KCl', name:'Potassium chloride', state:'Solid', mp:'770 °C', bp:'1420 °C', density:'1.98 g/cm³', bond:'Ionic', geometry:'Cubic crystal lattice (rock salt)', angle:'90° between neighbours', polarity:'Ionic',
+    about:'Used as a salt substitute and as a potassium fertilizer.', build:() => lattice('K','Cl',3.15) },
+  { f:'LiF', name:'Lithium fluoride', state:'Solid', mp:'845 °C', bp:'1676 °C', density:'2.64 g/cm³', bond:'Ionic', geometry:'Cubic crystal lattice (rock salt)', angle:'90° between neighbours', polarity:'Ionic',
+    about:'Has a very large electronegativity difference. It is used in optics for UV-transparent lenses.', build:() => lattice('Li','F',2.01) },
+  { f:'MgO', name:'Magnesium oxide', state:'Solid', mp:'2852 °C', bp:'3600 °C', density:'3.58 g/cm³', bond:'Ionic', geometry:'Cubic crystal lattice (rock salt)', angle:'90° between neighbours', polarity:'Ionic',
+    about:'The ions carry 2+ and 2− charges, so they attract very strongly, giving it a melting point near 2850 °C. Used to line furnaces.', build:() => lattice('Mg','O',2.11) },
+  { f:'CaO', name:'Calcium oxide (quicklime)', state:'Solid', mp:'2613 °C', bp:'2850 °C', density:'3.34 g/cm³', bond:'Ionic', geometry:'Cubic crystal lattice (rock salt)', angle:'90° between neighbours', polarity:'Ionic',
+    about:'Made by heating limestone. Used in cement and steelmaking.', build:() => lattice('Ca','O',2.40) },
+  { f:'CaCl2', name:'Calcium chloride', state:'Solid', mp:'772 °C', bp:'1935 °C', density:'2.15 g/cm³', bond:'Ionic', geometry:'Ionic lattice (formula unit shown)', angle:'—', polarity:'Ionic',
+    about:'One Ca²⁺ balances two Cl⁻ ions. It is spread on icy roads and used as a drying agent.', build:() => star('Ca', ligs('Cl', DIRS.linear, 2.7, 0)) },
+  { f:'MgCl2', name:'Magnesium chloride', state:'Solid', mp:'714 °C', bp:'1412 °C', density:'2.32 g/cm³', bond:'Ionic', geometry:'Ionic lattice (formula unit shown)', angle:'—', polarity:'Ionic',
+    about:'Found in seawater. It is the main source for producing magnesium metal, and is also used to make tofu.', build:() => star('Mg', ligs('Cl', DIRS.linear, 2.5, 0)) },
+  { f:'NaOH', name:'Sodium hydroxide (lye)', state:'Solid', mp:'318 °C', bp:'1388 °C', density:'2.13 g/cm³', bond:'Ionic (Na⁺ / OH⁻) + covalent O–H', geometry:'Ionic lattice (ion pair shown)', angle:'—', polarity:'Ionic',
+    about:'A strong base, used in soap making and drain cleaners. The hydroxide ion is held together by a covalent O–H bond.',
+    build:() => mol([['Na',-2.3,0,0],['O',0,0,0],['H',0.96,0,0]], [[0,1,0],[1,2,1]]) },
+  { f:'SO2', name:'Sulfur dioxide', state:'Gas', mp:'−72.0 °C', bp:'−10.0 °C', density:'2.62 g/L', bond:'Polar covalent', geometry:'Bent', angle:'119°', polarity:'Polar',
+    about:'Released by volcanoes and by burning coal. It causes acid rain, and is also used to preserve dried fruit and wine.', build:() => star('S', ligs('O', bent(119), 1.43, 2)) },
+  { f:'SO3', name:'Sulfur trioxide', state:'Liquid', mp:'16.9 °C', bp:'45 °C', density:'1.92 g/cm³', bond:'Polar covalent', geometry:'Trigonal planar', angle:'120°', polarity:'Nonpolar (symmetrical)',
+    about:'Reacts violently with water to form sulfuric acid.', build:() => star('S', ligs('O', DIRS.trigonal, 1.42, 2)) },
+  { f:'H2SO4', name:'Sulfuric acid', state:'Liquid', mp:'10.3 °C', bp:'337 °C', density:'1.83 g/cm³', bond:'Polar covalent', geometry:'Tetrahedral at S', angle:'~109.5°', polarity:'Polar',
+    about:'The most widely produced industrial chemical. It is a strong acid and a powerful dehydrating agent.',
+    build:() => {
+      const atoms = [['S',0,0,0]], bonds = [];
+      DIRS.tetra.forEach((d, i) => { atoms.push(['O', ...scale(d, i < 2 ? 1.43 : 1.57)]); bonds.push([0, i+1, i < 2 ? 2 : 1]); });
+      [3, 4].forEach(i => { atoms.push(['H', ...attach(atoms[i].slice(1), [0,0,0], 0.97)]); bonds.push([i, atoms.length-1, 1]); });
+      return mol(atoms, bonds);
+    } },
+  { f:'NO', name:'Nitric oxide', state:'Gas', mp:'−164 °C', bp:'−152 °C', density:'1.34 g/L', bond:'Polar covalent', geometry:'Linear', angle:'—', polarity:'Slightly polar',
+    about:'A radical, because it has an unpaired electron. In the body it acts as a signalling molecule that widens blood vessels.', build:() => diatomic('N','O',1.15,2) },
+  { f:'HNO3', name:'Nitric acid', state:'Liquid', mp:'−42 °C', bp:'83 °C', density:'1.51 g/cm³', bond:'Polar covalent (resonance)', geometry:'Trigonal planar at N', angle:'~120°', polarity:'Polar',
+    about:'A strong, corrosive acid used to make fertilizers and explosives.',
+    build:() => {
+      const T = DIRS.trigonal, oh = scale(T[2], 1.41);
+      return mol([['N',0,0,0],['O',...scale(T[0],1.21)],['O',...scale(T[1],1.21)],['O',...oh],['H',...attach(oh,[0,0,0],0.96)]],
+                 [[0,1,1.5],[0,2,1.5],[0,3,1],[3,4,1]]);
+    } },
+  { f:'CaCO3', name:'Calcium carbonate', state:'Solid', mp:'Decomposes at ~825 °C', bp:'—', density:'2.71 g/cm³', bond:'Ionic (Ca²⁺ / CO₃²⁻) + covalent C–O', geometry:'Trigonal planar carbonate ion', angle:'120°', polarity:'Ionic',
+    about:'Makes up limestone, marble, chalk and seashells. The carbonate ion\'s charge is spread across all three oxygens.',
+    build:() => {
+      const m = star('C', ligs('O', DIRS.trigonal, 1.29, 1.5));
+      m.atoms.push({ el:'Ca', p:[0,0,2.4] });
+      m.bonds.push([4,1,0],[4,2,0],[4,3,0]);
+      return m;
+    } },
+  { f:'CCl4', name:'Carbon tetrachloride', state:'Liquid', mp:'−22.9 °C', bp:'76.7 °C', density:'1.59 g/cm³', bond:'Polar covalent', geometry:'Tetrahedral', angle:'109.5°', polarity:'Nonpolar (symmetrical)',
+    about:'Its four polar C–Cl bonds cancel out because the molecule is symmetrical. It was once used as a cleaning solvent but is now restricted.', build:() => star('C', ligs('Cl', DIRS.tetra, 1.77)) },
+  { f:'SiO2', name:'Silicon dioxide (quartz)', state:'Solid', mp:'1713 °C', bp:'2950 °C', density:'2.65 g/cm³', bond:'Network covalent', geometry:'Tetrahedral network (one SiO₄ unit shown)', angle:'109.5°', polarity:'—',
+    about:'Each silicon atom bonds to four oxygens, and each oxygen bridges two silicons, forming a giant network. It is the main ingredient of sand and glass.', build:() => star('Si', ligs('O', DIRS.tetra, 1.61)) },
+  { f:'PCl3', name:'Phosphorus trichloride', state:'Liquid', mp:'−93.6 °C', bp:'76.1 °C', density:'1.574 g/cm³', bond:'Polar covalent', geometry:'Trigonal pyramidal', angle:'100°', polarity:'Polar',
+    about:'Used to make pesticides and flame retardants.', build:() => star('P', ligs('Cl', pyramid(100), 2.04)) },
+  { f:'SF6', name:'Sulfur hexafluoride', state:'Gas', mp:'Sublimes at −63.8 °C', bp:'—', density:'6.17 g/L', bond:'Polar covalent', geometry:'Octahedral', angle:'90°', polarity:'Nonpolar (symmetrical)',
+    about:'A very dense, inert gas used as an electrical insulator. It makes your voice sound deeper.', build:() => star('S', ligs('F', DIRS.octa, 1.56)) },
+  { f:'BF3', name:'Boron trifluoride', state:'Gas', mp:'−126.8 °C', bp:'−99.9 °C', density:'2.76 g/L', bond:'Polar covalent', geometry:'Trigonal planar', angle:'120°', polarity:'Nonpolar (symmetrical)',
+    about:'Boron has only six electrons around it here, which makes it a strong electron-pair acceptor (a Lewis acid).', build:() => star('B', ligs('F', DIRS.trigonal, 1.31)) },
+  { f:'NH4Cl', name:'Ammonium chloride', state:'Solid', mp:'Sublimes at 338 °C', bp:'—', density:'1.53 g/cm³', bond:'Ionic (NH₄⁺ / Cl⁻) + covalent N–H', geometry:'Tetrahedral ammonium ion', angle:'109.5°', polarity:'Ionic',
+    about:'Used in batteries, as a fertilizer, and in salty liquorice.',
+    build:() => { const m = star('N', ligs('H', DIRS.tetra, 1.03)); m.atoms.push({ el:'Cl', p:scale(DIRS.tetra[0], 3.2) }); m.bonds.push([1,5,0]); return m; } },
+  { f:'XeF4', name:'Xenon tetrafluoride', state:'Solid', mp:'Sublimes at 115.7 °C', bp:'—', density:'4.04 g/cm³', bond:'Polar covalent', geometry:'Square planar', angle:'90°', polarity:'Nonpolar (symmetrical)',
+    about:'Proof that noble gases can react. Two lone pairs above and below the xenon atom flatten the molecule into a square.', build:() => star('Xe', ligs('F', DIRS.square, 1.95)) },
+];
+
+function parseFormula(f) {
+  const counts = {};
+  for (const [, el, n] of f.matchAll(/([A-Z][a-z]?)(\d*)/g)) counts[el] = (counts[el] || 0) + (n ? +n : 1);
+  return counts;
+}
+const molarMass = counts => Object.entries(counts).reduce((s, [el, n]) => s + BY[el].mass * n, 0);
+COMPOUNDS.forEach(c => { c.counts = parseFormula(c.f); });
+
+/* ---------------- Ionic compound predictor ---------------- */
+const CATION = { Li:1, Na:1, K:1, Rb:1, Cs:1, Fr:1, Be:2, Mg:2, Ca:2, Sr:2, Ba:2, Ra:2, Al:3, Ga:3, In:3, Tl:1,
+  Sc:3, Y:3, La:3, Ti:4, Zr:4, V:3, Cr:3, Mn:2, Fe:3, Co:2, Ni:2, Cu:2, Zn:2, Ag:1, Cd:2, Au:3, Hg:2, Sn:4, Pb:2, Bi:3, Pt:2, Pd:2 };
+const VARIABLE = new Set(['Ti','V','Cr','Mn','Fe','Co','Ni','Cu','Sn','Pb','Au','Hg','Pt','Pd','Tl']);
+const ANION = { F:[1,'fluoride'], Cl:[1,'chloride'], Br:[1,'bromide'], I:[1,'iodide'], O:[2,'oxide'], S:[2,'sulfide'],
+  Se:[2,'selenide'], Te:[2,'telluride'], N:[3,'nitride'], P:[3,'phosphide'], H:[1,'hydride'] };
+const ROMAN = ['', 'I', 'II', 'III', 'IV'];
+const SUP = { 1:'', 2:'²', 3:'³', 4:'⁴' };
+const gcd = (a, b) => b ? gcd(b, a % b) : a;
+
+function bondClass(en1, en2) {
+  if (en1 == null || en2 == null) return { d: null, label: 'unknown' };
+  const d = Math.abs(en1 - en2);
+  return { d, label: d < 0.4 ? 'nonpolar covalent' : d < 1.7 ? 'polar covalent' : 'ionic' };
+}
+
+function predict(a, b) {
+  let cat, an;
+  if (CATION[a] && ANION[b]) { cat = a; an = b; }
+  else if (CATION[b] && ANION[a]) { cat = b; an = a; }
+  else return null;
+  if (an === 'H' && !['alkali', 'alkaline'].includes(BY[cat].cat)) return null;
+  const qc = CATION[cat], qa = ANION[an][0], g = gcd(qc, qa);
+  const nc = qa / g, na = qc / g;
+  const f = cat + (nc > 1 ? nc : '') + an + (na > 1 ? na : '');
+  const bc = bondClass(BY[cat].en, BY[an].en);
+  const ionic = bc.label === 'ionic';
+  return {
+    f, predicted: true, counts: { [cat]: nc, [an]: na },
+    name: `${BY[cat].name}${VARIABLE.has(cat) ? `(${ROMAN[qc]})` : ''} ${ANION[an][1]}`,
+    state: 'Solid (expected)',
+    mp: ionic ? 'High (typical of ionic solids)' : 'Moderate to high',
+    bp: '—', density: '—',
+    bond: ionic ? 'Ionic' : 'Polar covalent / partly ionic',
+    geometry: nc === 1 && na === 1 ? 'Crystal lattice (simplified cubic model)' : 'Formula unit (simplified model)',
+    angle: '—', polarity: ionic ? 'Ionic' : 'Polar',
+    about: `Predicted by balancing common ion charges: ${cat}${SUP[qc]}⁺ and ${an}${SUP[qa]}⁻. It takes ${nc} ${cat} for every ${na} ${an} to make the total charge zero. ` +
+      (VARIABLE.has(cat) ? `${BY[cat].name} can also form other ions, so other ratios exist. ` : '') +
+      'Property values are general expectations, not measured data.',
+    build: () => ionicUnit(cat, an, nc, na, ionic ? 0 : 1),
+  };
+}
+
+function ionicUnit(cat, an, nc, na, order) {
+  const tmpl = { 2: DIRS.linear, 3: DIRS.trigonal, 4: DIRS.tetra, 6: DIRS.octa };
+  if (nc === 1 && na === 1) return order === 0 ? lattice(cat, an, 2.6) : diatomic(cat, an, 2.2, 1);
+  if (nc === 1 && tmpl[na]) return star(cat, ligs(an, tmpl[na], 2.4, order));
+  if (na === 1 && tmpl[nc]) return star(an, ligs(cat, tmpl[nc], 2.4, order));
+  // otherwise: zig-zag chain alternating ions, majority type on the ends
+  const total = nc + na, atoms = [], bonds = [];
+  const [major, minor] = na >= nc ? [an, cat] : [cat, an];
+  for (let i = 0; i < total; i++) {
+    atoms.push([i % 2 ? minor : major, i * 2.0, i % 2 ? 1.2 : 0, 0]);
+    if (i) bonds.push([i - 1, i, order]);
+  }
+  return mol(atoms, bonds);
+}
+
+/* ---------------- Periodic table UI ---------------- */
+const ptable = document.getElementById('ptable');
+const cells = {};
+const color = el => CAT[BY[el].cat][1];
+
+document.getElementById('legend').innerHTML = Object.values(CAT)
+  .map(([n, c]) => `<span><i style="background:${c}"></i>${n}</span>`).join('');
+
+ELEMENTS.forEach(e => {
+  const b = document.createElement('button');
+  b.className = 'cell';
+  b.style.setProperty('--c', CAT[e.cat][1]);
+  b.style.gridRow = e.row;
+  b.style.gridColumn = e.col;
+  b.title = `${e.name} (${e.z})`;
+  b.innerHTML = `<span class="num">${e.z}</span><span class="sym">${e.sym}</span><span class="nm">${e.name}</span>`;
+  b.addEventListener('click', () => addEl(e.sym));
+  ptable.appendChild(b);
+  cells[e.sym] = b;
+});
+[[6, '57–71'], [7, '89–103']].forEach(([row, label]) => {
+  const d = document.createElement('div');
+  d.className = 'placeholder'; d.style.gridRow = row; d.style.gridColumn = 3; d.textContent = label;
+  ptable.appendChild(d);
+});
+const spacer = document.createElement('div');
+spacer.className = 'spacer'; spacer.style.gridRow = 8;
+ptable.appendChild(spacer);
+
+/* ---------------- Lab state ---------------- */
+const sel = new Map();
+let lastEl = null, current = null;
+const MAX_ATOMS = 12;
+const fmt = f => f.replace(/(\d+)/g, '<sub>$1</sub>');
+const total = () => [...sel.values()].reduce((a, b) => a + b, 0);
+
+function addEl(sym) {
+  lastEl = sym;
+  if (total() < MAX_ATOMS) sel.set(sym, (sel.get(sym) || 0) + 1);
+  update();
+}
+function removeEl(sym) {
+  const n = sel.get(sym) - 1;
+  if (n > 0) sel.set(sym, n); else sel.delete(sym);
+  update();
+}
+function setSelection(counts) {
+  sel.clear();
+  Object.entries(counts).forEach(([k, v]) => sel.set(k, v));
+  lastEl = Object.keys(counts)[0];
+  update();
+}
+
+function update() {
+  renderTray();
+  renderElement();
+  renderResults();
+  highlightTable();
+}
+
+function renderTray() {
+  const tray = document.getElementById('tray');
+  if (!sel.size) {
+    tray.innerHTML = '<div class="empty">Empty. Click elements in the table to add atoms (for example H, H, O).</div>';
+    return;
+  }
+  tray.innerHTML = [...sel].map(([s, n]) =>
+    `<span class="chip" style="--c:${color(s)}">${s}${n > 1 ? `<small>×${n}</small>` : ''}<button data-rm="${s}" title="Remove one ${s}">−</button></span>`
+  ).join('') + (total() >= MAX_ATOMS ? '<div class="empty" style="width:100%">The tray is full (12 atoms max).</div>' : '');
+  tray.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => removeEl(b.dataset.rm)));
+}
+
+function renderElement() {
+  const card = document.getElementById('elementCard');
+  if (!lastEl) return;
+  const e = BY[lastEl];
+  let valence = 'Varies';
+  if (e.group === 1 || e.group === 2) valence = e.group;
+  else if (e.group >= 13) valence = e.z === 2 ? 2 : e.group - 10;
+  const ion = CATION[e.sym] ? `${e.sym}${SUP[CATION[e.sym]]}⁺` : ANION[e.sym] ? `${e.sym}${SUP[ANION[e.sym][0]]}⁻` : '—';
+  const rows = [
+    ['Atomic number', e.z],
+    ['Atomic mass', `${e.radioactive ? `[${e.mass}]` : e.mass} u`],
+    ['Period / Group', `${e.period} / ${e.group ?? (e.cat === 'lanthanide' || e.cat === 'actinide' ? 'f-block' : '—')}`],
+    ['State at 25 °C', e.state],
+    ['Electronegativity', e.en ?? '—'],
+    ['Valence electrons', valence],
+    ['Common ion', ion],
+    ['Radioactive', e.radioactive ? 'Yes' : 'No'],
+    ['Atoms in tray', sel.get(e.sym) || 0],
+  ];
+  card.innerHTML = `
+    <h2>Element</h2>
+    <div class="el-big" style="margin-top:12px">
+      <div class="el-tile" style="--c:${CAT[e.cat][1]}"><span>${e.z}</span><b>${e.sym}</b></div>
+      <div><div class="el-name">${e.name}</div><div class="el-cat" style="color:${CAT[e.cat][1]}">${CAT[e.cat][0]}</div></div>
+    </div>
+    <table class="props">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>`;
+}
+
+function matches() {
+  const syms = [...sel.keys()];
+  const sameSet = c => { const k = Object.keys(c.counts); return k.length === syms.length && syms.every(s => c.counts[s]); };
+  const dist = c => Object.keys({ ...c.counts, ...Object.fromEntries(sel) })
+    .reduce((s, k) => s + Math.abs((sel.get(k) || 0) - (c.counts[k] || 0)), 0);
+  const exact = COMPOUNDS.filter(sameSet).sort((a, b) => dist(a) - dist(b));
+  if (!exact.length && syms.length === 2) { const p = predict(...syms); if (p) exact.push(p); }
+  const bigger = COMPOUNDS.filter(c => syms.every(s => c.counts[s]) && Object.keys(c.counts).length > syms.length);
+  return { exact, bigger };
+}
+
+function renderResults() {
+  const box = document.getElementById('results');
+  const card = document.getElementById('compoundCard');
+  if (!sel.size) {
+    box.innerHTML = '<p class="note">Add some elements to the tray, or press <b>Surprise me</b> to load a random compound.</p>';
+    card.hidden = true; current = null; setMol(null);
+    return;
+  }
+  const { exact, bigger } = matches();
+  const syms = [...sel.keys()];
+  let html = '';
+  const inert = syms.filter(s => BY[s].cat === 'noble' && s !== 'Xe');
+  if (inert.length) html += `<p class="note warn">${inert.map(s => BY[s].name).join(', ')}: noble gases have full outer shells and almost never form compounds.</p>`;
+
+  if (exact.length) {
+    html += `<p class="note">These atoms can form:</p><div class="results">` +
+      exact.map((c, i) => `<button class="cmp-btn" data-ex="${i}"><b>${fmt(c.f)}</b><span>${c.name}${c.predicted ? ' · predicted' : ''}</span></button>`).join('') + '</div>';
+  } else {
+    html += `<p class="note">No common compound in this library is made of exactly <b>${syms.join(' + ')}</b>.` +
+      (syms.length === 1 ? ' Try pairing it with another element. The ones still lit in the table can combine with it.' : '') + '</p>';
+  }
+  if (bigger.length) {
+    html += `<h3>Add more elements to make</h3><div class="results">` +
+      bigger.slice(0, 8).map((c, i) => `<button class="cmp-btn small" data-big="${i}"><b>${fmt(c.f)}</b><span>${c.name}</span></button>`).join('') + '</div>';
+  }
+  box.innerHTML = html;
+  box.querySelectorAll('[data-ex]').forEach(b => b.addEventListener('click', () => showCompound(exact[+b.dataset.ex])));
+  box.querySelectorAll('[data-big]').forEach(b => b.addEventListener('click', () => {
+    const c = bigger[+b.dataset.big];
+    setSelection(c.counts);
+    const again = matches().exact.find(x => x.f === c.f);
+    if (again) showCompound(again);
+  }));
+
+  if (exact.length) {
+    const keep = current && exact.find(c => c.f === current.f);
+    showCompound(keep || exact[0]);
+  } else {
+    card.hidden = true; current = null; setMol(null);
+  }
+}
+
+function showCompound(c) {
+  current = c;
+  document.querySelectorAll('[data-ex]').forEach(b => b.classList.toggle('active', b.querySelector('b').innerHTML === fmt(c.f)));
+  const card = document.getElementById('compoundCard');
+  card.hidden = false;
+  const mass = molarMass(c.counts);
+  const model = c.model || (c.model = c.build());
+
+  // unique bonds in the model
+  const seen = new Map();
+  model.bonds.forEach(([i, j, o]) => {
+    const [a, b] = [model.atoms[i].el, model.atoms[j].el].sort();
+    const key = `${a}-${b}-${o}`;
+    if (!seen.has(key)) seen.set(key, { a, b, o });
+  });
+  const bondName = { 0: 'ionic attraction', 1: 'single bond', 1.5: 'resonance bond', 2: 'double bond', 3: 'triple bond' };
+  const bondList = [...seen.values()].map(({ a, b, o }) => {
+    const bc = bondClass(BY[a].en, BY[b].en);
+    const sym = o === 0 ? '···' : o === 2 ? '=' : o === 3 ? '≡' : '–';
+    return `<li><b>${a}${sym}${b}</b> ${bondName[o]}<br><small>ΔEN ${bc.d == null ? '—' : bc.d.toFixed(2)} → ${bc.label}</small></li>`;
+  }).join('');
+
+  const comp = Object.entries(c.counts).map(([el, n]) => {
+    const pct = BY[el].mass * n / mass * 100;
+    return `<div class="comp-row"><b>${el}</b><div class="comp-bar"><i style="width:${pct}%;background:${atomColor(el)}"></i></div><span>${pct.toFixed(1)}%</span></div>`;
+  }).join('');
+
+  const rows = [
+    ['Molar mass', `${mass.toFixed(2)} g/mol`],
+    ['State at 25 °C', c.state],
+    ['Melting point', c.mp],
+    ['Boiling point', c.bp],
+    ['Density', c.density],
+    ['Bond type', c.bond],
+    ['Shape', c.geometry],
+    ['Bond angle', c.angle],
+    ['Polarity', c.polarity],
+  ];
+  document.getElementById('props').innerHTML = `
+    <div class="formula">${fmt(c.f)}</div>
+    <div class="cmp-name">${c.name}</div>
+    ${c.predicted ? '<span class="badge">Predicted from ion charges</span>' : ''}
+    <p class="about">${c.about}</p>
+    <table class="props">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
+    <h3>Bonds</h3><ul class="bonds">${bondList}</ul>
+    <h3>Composition by mass</h3>${comp}`;
+  setMol(model);
+}
+
+function highlightTable() {
+  const syms = [...sel.keys()];
+  const partners = new Set(syms);
+  COMPOUNDS.forEach(c => { if (syms.every(s => c.counts[s])) Object.keys(c.counts).forEach(k => partners.add(k)); });
+  if (syms.length === 1) {
+    const s = syms[0];
+    if (CATION[s]) Object.keys(ANION).forEach(k => { if (k !== 'H' || ['alkali','alkaline'].includes(BY[s].cat)) partners.add(k); });
+    if (ANION[s]) Object.keys(CATION).forEach(k => { if (s !== 'H' || ['alkali','alkaline'].includes(BY[k].cat)) partners.add(k); });
+  }
+  ELEMENTS.forEach(e => {
+    const c = cells[e.sym];
+    c.classList.toggle('dim', syms.length > 0 && !partners.has(e.sym));
+    c.classList.toggle('picked', sel.has(e.sym));
+    c.querySelector('.count')?.remove();
+    if (sel.get(e.sym) > 1) c.insertAdjacentHTML('beforeend', `<span class="count">${sel.get(e.sym)}</span>`);
+  });
+}
+
+document.getElementById('clearBtn').addEventListener('click', () => { sel.clear(); lastEl = null; update(); });
+document.getElementById('randomBtn').addEventListener('click', () => {
+  const pool = COMPOUNDS.filter(c => Object.keys(c.counts).length > 1 && c !== current);
+  const c = pool[Math.floor(Math.random() * pool.length)];
+  current = c;
+  setSelection(c.counts);
+});
+
+/* ---------------- 3D viewer (canvas) ---------------- */
+const CPK = { H:'#f1f1f1', C:'#909090', N:'#4d6bfe', O:'#ff3b3b', F:'#90e050', Cl:'#1fd01f', Br:'#c0392b', I:'#a64dff',
+  S:'#ffd93b', P:'#ff8000', Na:'#ab5cf2', K:'#8f40d4', Li:'#cc80ff', Mg:'#8aff00', Ca:'#3ddc84', B:'#ffb5b5', Si:'#f0c8a0',
+  Xe:'#42c0d0', Fe:'#e06633', Al:'#bfa6a6', Cu:'#c88033', Zn:'#7d80b0', Ag:'#c0c0c0', Au:'#ffd123' };
+const atomColor = el => CPK[el] || color(el);
+const atomRadius = el => el === 'H' ? 0.3 : BY[el].period === 2 ? 0.45 : BY[el].period === 3 ? 0.55 : 0.62;
+
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  const t = amt > 0 ? 255 : 0, p = Math.abs(amt);
+  r = Math.round(r + (t - r) * p); g = Math.round(g + (t - g) * p); b = Math.round(b + (t - b) * p);
+  return `rgb(${r},${g},${b})`;
+}
+function luminance(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+}
+
+const V = { canvas: document.getElementById('viewer'), mol: null, yaw: 0.6, pitch: 0.35, zoom: 1, drag: null, dpr: 1 };
+V.ctx = V.canvas.getContext('2d');
+const spinChk = document.getElementById('spinChk'), labelChk = document.getElementById('labelChk');
+
+function setMol(m) {
+  if (!m) { V.mol = null; return; }
+  const n = m.atoms.length;
+  const c = m.atoms.reduce((s, a) => add(s, a.p), [0,0,0]).map(v => v / n);
+  const atoms = m.atoms.map(a => ({ el: a.el, p: sub(a.p, c) }));
+  const maxR = Math.max(2.2, ...atoms.map(a => len3(a.p) + atomRadius(a.el)));
+  V.mol = { atoms, bonds: m.bonds, maxR };
+  V.zoom = 1;
+}
+
+function resizeViewer() {
+  const r = V.canvas.getBoundingClientRect();
+  if (!r.width) return;
+  V.dpr = window.devicePixelRatio || 1;
+  const w = Math.round(r.width * V.dpr), h = Math.round(r.height * V.dpr);
+  if (V.canvas.width !== w || V.canvas.height !== h) { V.canvas.width = w; V.canvas.height = h; }
+}
+
+function drawViewer() {
+  resizeViewer();
+  const { ctx, canvas, mol: m } = V;
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  if (!m) return;
+  const cy = Math.cos(V.yaw), sy = Math.sin(V.yaw), cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
+  const fit = Math.min(W, H) * 0.42 / m.maxR * V.zoom;
+  const D = m.maxR * 5;
+
+  const P = m.atoms.map(a => {
+    const [x, y, z] = a.p;
+    const x1 = x * cy + z * sy, z1 = -x * sy + z * cy;
+    const y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+    const s = D / (D - z2);
+    return { x: W / 2 + x1 * fit * s, y: H / 2 - y2 * fit * s, z: z2, s, el: a.el, r: atomRadius(a.el) * fit * s };
+  });
+
+  const items = [
+    ...P.map((p, i) => ({ z: p.z, atom: i })),
+    ...m.bonds.map(b => ({ z: (P[b[0]].z + P[b[1]].z) / 2 - 0.01, bond: b })),
+  ].sort((a, b) => a.z - b.z);
+
+  for (const it of items) {
+    if (it.bond) drawBond(P[it.bond[0]], P[it.bond[1]], it.bond[2], fit);
+    else drawAtom(P[it.atom]);
+  }
+}
+
+function drawBond(a, b, order, fit) {
+  const ctx = V.ctx;
+  const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1;
+  const nx = -dy / L, ny = dx / L;
+  const s = (a.s + b.s) / 2;
+  const w = Math.max(1.5, 0.14 * fit * s);
+  ctx.lineCap = 'round';
+  if (order === 0) {
+    ctx.setLineDash([w * 0.6, w * 1.4]);
+    ctx.strokeStyle = 'rgba(165,159,196,.75)';
+    ctx.lineWidth = w * 0.45;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    ctx.setLineDash([]);
+    return;
+  }
+  const gap = w * 0.95;
+  const lines = order === 1 ? [[0, false]]
+    : order === 2 ? [[-gap / 2, false], [gap / 2, false]]
+    : order === 3 ? [[-gap, false], [0, false], [gap, false]]
+    : [[-gap / 2, false], [gap / 2, true]];
+  const lw = order === 1 ? w : w * 0.55;
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  for (const [off, dashed] of lines) {
+    const ox = nx * off, oy = ny * off;
+    ctx.lineWidth = lw;
+    ctx.setLineDash(dashed ? [lw * 1.2, lw * 1.2] : []);
+    ctx.strokeStyle = shade(atomColor(a.el), -0.25);
+    ctx.beginPath(); ctx.moveTo(a.x + ox, a.y + oy); ctx.lineTo(mx + ox, my + oy); ctx.stroke();
+    ctx.strokeStyle = shade(atomColor(b.el), -0.25);
+    ctx.beginPath(); ctx.moveTo(mx + ox, my + oy); ctx.lineTo(b.x + ox, b.y + oy); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+}
+
+function drawAtom(p) {
+  const ctx = V.ctx, col = atomColor(p.el);
+  const g = ctx.createRadialGradient(p.x - p.r * 0.35, p.y - p.r * 0.4, p.r * 0.1, p.x, p.y, p.r);
+  g.addColorStop(0, shade(col, 0.6));
+  g.addColorStop(0.55, col);
+  g.addColorStop(1, shade(col, -0.55));
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+  if (labelChk.checked && p.r > 8 * V.dpr) {
+    ctx.fillStyle = luminance(col) > 0.6 ? '#1a1426' : '#ffffff';
+    ctx.font = `700 ${Math.round(p.r * 0.75)}px ui-monospace, Consolas, monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(p.el, p.x, p.y + 1);
+  }
+}
+
+function frame() {
+  if (spinChk.checked && !V.drag && V.mol) V.yaw += 0.008;
+  drawViewer();
+  requestAnimationFrame(frame);
+}
+
+V.canvas.addEventListener('pointerdown', e => { V.drag = { x: e.clientX, y: e.clientY }; V.canvas.setPointerCapture(e.pointerId); });
+V.canvas.addEventListener('pointermove', e => {
+  if (!V.drag) return;
+  V.yaw += (e.clientX - V.drag.x) * 0.01;
+  V.pitch = Math.max(-1.5, Math.min(1.5, V.pitch + (e.clientY - V.drag.y) * 0.01));
+  V.drag = { x: e.clientX, y: e.clientY };
+});
+const endDrag = () => { V.drag = null; };
+V.canvas.addEventListener('pointerup', endDrag);
+V.canvas.addEventListener('pointercancel', endDrag);
+V.canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  V.zoom = Math.max(0.4, Math.min(3, V.zoom * (e.deltaY < 0 ? 1.1 : 0.9)));
+}, { passive: false });
+document.getElementById('resetBtn').addEventListener('click', () => { V.yaw = 0.6; V.pitch = 0.35; V.zoom = 1; });
+
+update();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
